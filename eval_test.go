@@ -7,17 +7,7 @@ import (
     gi "github.com/iotaledger/giota"
 )
 
-var (
-    iSeed            gi.Trytes
-)
-
-var  iTrs = []gi.Transfer{
-    {
-        Address: "BXHANKTHPJUPUVZOLJPZPQLDZPWVSBPGLMLSOYFZM9RSHVZRRBZJZJDZYTNRHXBVMQKFT9DVKVNDPCGC9ZXXTZCTMB",
-        Value:   1500000,
-        Tag:     "RPROOF",
-    },
-}
+const ENDPOINT  = "http://localhost:14266"
 
 func init()  {
     ts := "DOZREH9PKR9UCVWUBMFFHLHYVMJXRFQAUJSEBEWV9DAQZC9FCAYKQRVBKPMONBRKDRGKROBGQMGVRXKFA"
@@ -29,8 +19,24 @@ func init()  {
     }
 }
 
-func BenchmarkBundle(b *testing.B) {
+func benchmarkBundle(i int, api *gi.API) gi.Bundle {
+    randVal := rand.Int63n(1279530283277761)
+    iTrs[0].Value = randVal
+    bdl, err := gi.PrepareTransfers(api, iSeed, iTrs, nil, "", 2)
 
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    if i == 0 {
+        return bdl
+    } else {
+        return nil
+    }
+}
+
+func BenchmarkBundle(b *testing.B) {
+    b.ReportAllocs()
     var err error
 
     if err != nil {
@@ -38,19 +44,12 @@ func BenchmarkBundle(b *testing.B) {
     }
 
     var exBundle gi.Bundle
+    api := gi.NewAPI(ENDPOINT, nil)
 
-    for i := 0; i < 10; i++ {
-        api := gi.NewAPI("http://localhost:14265", nil)
-        randVal := rand.Int63n(1279530283277761)
-        iTrs[0].Value = randVal
-        bdl, err := gi.PrepareTransfers(api, iSeed, iTrs, nil, "", 2)
-
-        if err != nil {
-            b.Error(err)
-        }
-
-        if i == 0 {
-            exBundle = bdl
+    for i := 0; i < b.N; i++ {
+        tempBdl := benchmarkBundle(i, api)
+        if tempBdl != nil {
+            exBundle = tempBdl
         }
     }
 
@@ -62,16 +61,28 @@ func BenchmarkBundle(b *testing.B) {
     b.Logf("The length of a bundle in Trytes is %v\n", tryteLen)
 }
 
-func BenchmarkBundleValid(b *testing.B) {
+func BenchmarkAddressing(b *testing.B) {
+    seed := gi.NewSeed()
+    b.ReportAllocs()
 
+    for i := 0; i < b.N; i++  {
+        _, err := gi.NewAddress(seed, i, 2)
+        if err != nil {
+            b.Error(err)
+        }
+    }
+}
+
+func BenchmarkBundleValid(b *testing.B) {
+    b.ReportAllocs()
     var err error
 
     if err != nil {
         b.Errorf("There was an error initialising the test: %s", err)
     }
 
-    for i := 0; i < 10; i++ {
-        api := gi.NewAPI("http://localhost:14265", nil)
+    for i := 0; i < b.N; i++ {
+        api := gi.NewAPI(ENDPOINT, nil)
         randVal := rand.Int63n(1279530283277761)
         iTrs[0].Value = randVal
         bdl, err := gi.PrepareTransfers(api, iSeed, iTrs, nil, "", 2)
@@ -79,8 +90,19 @@ func BenchmarkBundleValid(b *testing.B) {
         if err != nil {
             b.Error(err)
         }
-
         if err = bdl.IsValid(); err != nil {
+            b.Error(err)
+        }
+    }
+}
+
+func BenchmarkGetBalances(b *testing.B) {
+    b.ReportAllocs()
+    api := gi.NewAPI(ENDPOINT, nil)
+    for i := 0; i < b.N; i++  {
+        // If inputs with enough balance
+        _, err := gi.GetInputs(api, iSeed, 0, 100, 100, 2)
+        if err != nil {
             b.Error(err)
         }
     }

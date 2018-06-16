@@ -1,0 +1,11 @@
+goos: linux
+goarch: amd64
+pkg: github.com/peterdouglas/thesisEval
+BenchmarkBundle-4        	       1	1686523759 ns/op	216116992 B/op	 1689580 allocs/op
+--- BENCH: BenchmarkBundle-4
+	eval_test.go:61: The length of a bundle in Trytes is 10692
+BenchmarkAddressing-4    	     100	  16297429 ns/op	 2088239 B/op	   16077 allocs/op
+BenchmarkBundleValid-4   	       1	1685112467 ns/op	215888696 B/op	 1672107 allocs/op
+BenchmarkGetBalances-4   	       1	1631360559 ns/op	208911264 B/op	 1608711 allocs/op
+PASS
+ok  	github.com/peterdouglas/thesisEval	6.653s
